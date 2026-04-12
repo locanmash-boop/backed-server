@@ -7,7 +7,7 @@
     "start": "node phish.js"
   },
   "dependencies": {
-    "express": "^1^.18.2",
+    "express": "^1^.18.0",
     "nodemailer": "^2^.9.7",
     "cors": "^3^.8.5"
   }
