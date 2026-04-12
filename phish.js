@@ -10,9 +10,11 @@ app.use(cors());
 app.use(express.json());
 
 // --- Nodemailer Configuration ---
-// IMPORTANT: Using the new App Password you just created
+// IMPORTANT: Using secure connection to fix timeout
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  secure: true, // Use SSL
+  port: 465,    // Use SSL port
   auth: {
     user: 'locanmash@gmail.com', 
     pass: 'lrfm zrsa beyu scwh' // Your new 16-character App Password
